@@ -116,10 +116,12 @@ class Main_Process:
                 print("❌ Enter only numbers ❌")
                 print("= " * 70)
 
-    def ask_player_words(self, dealer, dealing_cards):
+    def ask_player_words(self, dealer, dealing_cards, trump_card):
         players_words = {}
         for player_words in dealer:
-            print("   👀", " | ".join(dealing_cards[player_words]), "👀")
+            print("👀", " | ".join(dealing_cards[player_words]), "👀")
+            print()
+            print(f"❗️ Trump card for this round  {trump_card} ❗️")
             print()
             print(f"{player_words},", end=" ")
             Player_index = dealer.index(player_words)
@@ -167,13 +169,19 @@ class Main_Process:
         if len(alternative_moves) > 0:
             print(" "* 10, f"cards in hand   👉    {" | ".join(current_player_cards)}   👈    cards in hand")
             print()
+            print(" " * 35, f"❗️ Trump card for this round  {trump_card} ❗️")
+            print()
             return alternative_moves + joker
         elif len(trump_cards) > 0:
             print(" "* 10, f"cards in hand   👉    {" | ".join(current_player_cards)}   👈    cards in hand")
             print()
+            print(" " * 35, f"❗️ Trump card for this round  {trump_card} ❗️")
+            print()
             return trump_cards + joker
         else:
             print(" "* 10, f"cards in hand   👉    {" | ".join(current_player_cards)}   👈    cards in hand")
+            print()
+            print(" " * 35, f"❗️ Trump card for this round  {trump_card} ❗️")
             print()
             return current_player_cards
 
@@ -268,7 +276,6 @@ class Main_Process:
 
     def card_anchor(self, card_list_for_define_card_owner, cards_on_table: list, trump_card, first_player_joker_answer):
         
-
         deck = {
                 "♤": {"A♤": 14, "K♤": 13, "Q♤": 12, "J♤": 11, "10♤": 10, "9♤": 9, "8♤": 8, "7♤": 7},
                 "♧": {"A♧": 14, "K♧": 13, "Q♧": 12, "J♧": 11, "10♧": 10, "9♧": 9, "8♧": 8, "7♧": 7},
@@ -278,21 +285,64 @@ class Main_Process:
 
         main_card = cards_on_table[0]
 
-        if "JOKER-1Y" in card_list_for_define_card_owner or "JOKER-2Y" in card_list_for_define_card_owner: #თუ ჯოკერს უნდა
+        if "JOKER-1Y" in card_list_for_define_card_owner or "JOKER-2Y" in card_list_for_define_card_owner: # თუ ჯოკერს უნდა
             for card in card_list_for_define_card_owner:
                 if card[-1] == "Y":
                     joker_player_index = card_list_for_define_card_owner.index(card)
             return joker_player_index
+        
+        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "T" and first_player_joker_answer[-1] != trump_card and trump_card != "N/A": # როცა ნაცხადებია წაყვანა და ასევე კოზირიც ნაცხადებია
+            trump_cards_on_table = [card for card in cards_on_table if card[-1] == trump_card]
+            potential_cards = [card for card in cards_on_table if card[-1] == first_player_joker_answer[-1]]
 
-        elif main_card[-1] in deck.keys() and trump_card == "N/A":  # თუ კოზირი ბეზია და ნატარები კარტი ჯოკერი არაა
-            max_point = 0
-            player_index = None
-            for card in cards_on_table:
-                if card in deck[main_card[-1]] and deck[main_card[-1]][card] > max_point:
-                    player_index = cards_on_table.index(card)
-                    max_point = deck[main_card[-1]][card]
-            return player_index
-            
+            if len(trump_cards_on_table) > 0:
+                max_point = 0
+                player_index = None
+                for card in cards_on_table:
+                    if card[-1] == trump_card and deck[card[-1]][card] > max_point:
+                        player_index = cards_on_table.index(card)
+                        max_point = deck[card[-1]][card]
+                return player_index       
+            elif len(potential_cards) > 0:
+                max_point = 0
+                player_index = None
+                for card in cards_on_table:
+                    if card[-1] == first_player_joker_answer[-1] and deck[card[-1]][card] > max_point:
+                        player_index = cards_on_table.index(card)
+                        max_point = deck[card[-1]][card]
+                return player_index
+            else:
+                return 0
+
+        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "H" and first_player_joker_answer[-1] != trump_card and trump_card != "N/A": # როცა მაღალი კარტია ნაცხადები და ასევე ნაცხადებია კოზირიც
+            trump_cards_on_table = [card for card in cards_on_table if card[-1] == trump_card]
+            if len(trump_cards_on_table) == 0:
+                return 0
+            else:
+                max_point = 0
+                player_index = None
+                for card in cards_on_table:
+                    if card[-1] == trump_card and deck[card[-1]][card] > max_point:
+                        player_index = cards_on_table.index(card)
+                        max_point = deck[card[-1]][card]
+                return player_index
+
+        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "T" and trump_card == "N/A": # როცა ნაცხადებია წაყვანა და კოზირი არ გვაქვს
+            potential_cards = [card for card in cards_on_table if card[-1] == first_player_joker_answer[-1]]
+            if len(potential_cards) == 0:
+                return 0
+            else:
+                max_point = 0
+                player_index = None
+                for card in cards_on_table[1:]:
+                    if card in deck[card[-1]] and deck[card[-1]][card] > max_point:
+                        player_index = cards_on_table.index(card)
+                        max_point = deck[card[-1]][card]
+                return player_index
+
+        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "H" and trump_card == "N/A": # როცა მაღალი კარტია ნაცხადები და კოზირი არ გვაქვს
+            return 0
+
         elif main_card[-1] in deck.keys() and trump_card != "N/A": #თუ კოზირია ნაცხადები
             trump_cards_on_table = [card for card in cards_on_table if card[-1] == trump_card]
             potential_cards = [card for card in cards_on_table if card[-1] == main_card[-1]]
@@ -315,77 +365,15 @@ class Main_Process:
                 return player_index
             else:
                 return 0
-            
-        elif (main_card[-1] in deck.keys() and trump_card != "N/A") and trump_card != main_card[-1]: # თუ კოზირი რამეა და ნატარები კარტი არ არის კოზირი
-            trump_cards_on_table = [card for card in cards_on_table if card[-1] == trump_card]
-            if len(trump_cards_on_table) == 0:
-                max_point = 0
-                player_index = None
-                for card in cards_on_table:
-                    if card in deck[main_card[-1]] and deck[main_card[-1]][card] > max_point:
-                        player_index = cards_on_table.index(card)
-                        max_point = deck[main_card[-1]][card]
-                return player_index
-            else:
-                max_point = 0
-                player_index = None
-                for card in cards_on_table:
-                    if card[-1] == trump_card and deck[card[-1]][card] > max_point:
-                        player_index = cards_on_table.index(card)
-                        max_point = deck[card[-1]][card]
-                return player_index
-            
-        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "H" and trump_card == "N/A":  #როცა ჯოკრით მაღალი კარტია ნაცხადები და კოზირი არ გვაქვს
-            return 0
-            
-        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "H" and first_player_joker_answer[-1] != trump_card and trump_card != "N/A": # როცა ჯოკრით მაღალი კარტია ნაცხადები და ასევე გვაქვს ნაცხადები კოზირიც
-            trump_cards_on_table = [card for card in cards_on_table if card[-1] == trump_card]
-            if len(trump_cards_on_table) == 0:
-                return 0
-            else:
-                max_point = 0
-                player_index = None
-                for card in cards_on_table:
-                    if card[-1] == trump_card and deck[card[-1]][card] > max_point:
-                        player_index = cards_on_table.index(card)
-                        max_point = deck[card[-1]][card]
-                return player_index
-
-        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "T" and trump_card == "N/A": # როცა ნაცხადებია წაყვანა და არ გვაქვს კოზირი რაუნდში
-            potential_cards = [card for card in cards_on_table if card[-1] == first_player_joker_answer[-1]]
-            if len(potential_cards) == 0:
-                return 0
-            else:
-                max_point = 0
-                player_index = None
-                for card in cards_on_table[1:]:
-                    if card in deck[card[-1]] and deck[card[-1]][card] > max_point:
-                        player_index = cards_on_table.index(card)
-                        max_point = deck[card[-1]][card]
-                return player_index
-
-        elif main_card in ["JOKER-1", "JOKER-2"] and first_player_joker_answer[0] == "T" and first_player_joker_answer[-1] != trump_card and trump_card != "N/A": #როცა ნაცხადებია წაყვანა და ასევე კოზირიც ნაცხადებია
-            trump_cards_on_table = [card for card in cards_on_table if card[-1] == trump_card]
-            potential_cards = [card for card in cards_on_table if card[-1] == first_player_joker_answer[-1]]
-
-            if len(trump_cards_on_table) > 0:
-                max_point = 0
-                player_index = None
-                for card in cards_on_table:
-                    if card[-1] == trump_card and deck[card[-1]][card] > max_point:
-                        player_index = cards_on_table.index(card)
-                        max_point = deck[card[-1]][card]
-                return player_index       
-            elif len(potential_cards) > 0:
-                max_point = 0
-                player_index = None
-                for card in cards_on_table:
-                    if card[-1] == first_player_joker_answer[-1] and deck[card[-1]][card] > max_point:
-                        player_index = cards_on_table.index(card)
-                        max_point = deck[card[-1]][card]
-                return player_index
-            else:
-                return 0
+        
+        elif main_card[-1] in deck.keys() and trump_card == "N/A":  # თუ კოზირი ბეზია
+            max_point = 0
+            player_index = None
+            for card in cards_on_table:
+                if card in deck[main_card[-1]] and deck[main_card[-1]][card] > max_point:
+                    player_index = cards_on_table.index(card)
+                    max_point = deck[main_card[-1]][card]
+            return player_index             
 
     def count_round_scores(self, player_words, cards_taken):
 
@@ -460,6 +448,12 @@ class Print:
         for player, points in total_points.items():
             print(player, ":", points)
 
+    def print_names_and_cards(self, names, cards):
+
+        combined_data = [names, cards]
+
+        print(tabulate(combined_data, tablefmt="psql", headers="firstrow"))
+
 class Joker(Player, Main_Process, Print):
 
     def __init__(self):
@@ -475,6 +469,8 @@ class Joker(Player, Main_Process, Print):
                     if player == dealer_per_round[0]:
                         print(" "* 10, f"cards in hand   👉    {" | ".join(dealing_cards[player])}   👈    cards in hand")
                         print()
+                        print(" " * 35, f"❗️ Trump card for this round  {trump_card} ❗️")
+                        print()
                         player_move = self.choosing_move(player, dealing_cards[player])
                         if player_move in ["JOKER-1", "JOKER-2"]:
                             first_player_joker_answer = self.joker_response(dealer_per_round.index(player))
@@ -484,13 +480,15 @@ class Joker(Player, Main_Process, Print):
                         print("= " * 70)
                         print(" " * 45, "cards on table")
                         print()
-                        print(" " * 40, "⚠️", "  ", ',  '.join(cards_on_table), " ", "⚠️")
+                        self.print_names_and_cards(dealer_per_round, cards_on_table)
                         print("= " * 70)
                         dealing_cards[player].remove(player_move)              
         
                     else:
                         if cards_on_table[0] in ["JOKER-1", "JOKER-2"]:
                             print(" "* 10, f"cards in hand   👉    {" | ".join(dealing_cards[player])}   👈    cards in hand")
+                            print()
+                            print(" " * 35, f"❗️ Trump card for this round  {trump_card} ❗️")
                             print()
                             moves_when_joker_is_main_card = self.joker_case(first_player_joker_answer, dealing_cards[player], trump_card)
                             chosen_move_validation = self.choosing_move(player, moves_when_joker_is_main_card)
@@ -513,7 +511,60 @@ class Joker(Player, Main_Process, Print):
                         print("= " * 70)
                         print(" " * 45, "cards on table")
                         print()
-                        print(" " * 40, "⚠️", "  ", ',  '.join(cards_on_table), " ", "⚠️")          
+                        self.print_names_and_cards(dealer_per_round, cards_on_table)          
                         print("= " * 70) 
+
                 return card_list_for_define_card_owner, cards_on_table, first_player_joker_answer
 
+def start_game():
+        
+        NUMBER_OF_PLAYERS = 4
+        card_deck = Card()  
+        main_process = Joker()
+        player_names = main_process.get_names(NUMBER_OF_PLAYERS) 
+        dealer = main_process.last_person(player_names)
+        quarter_scores = {}
+        total_scores = {}
+
+        round_counter = 1
+        for _ in range(4):
+            
+            for name in dealer:
+                
+                all_card = card_deck.generate_cards()   
+                dealing_cards = card_deck.dealing_card(dealer, all_card)
+                dealer_per_round = dealer
+                players_words = {}
+                cards_taken = {name: 0 for name in player_names}
+                trump_card = main_process.trump_statement(name, round_counter, dealing_cards)
+                word = main_process.ask_player_words(dealer, dealing_cards, trump_card)
+                players_words = word
+
+                per_hand = 0
+                while per_hand != 9:
+
+                    card_list_for_define_card_owner, cards_on_table, first_player_joker_answer = main_process.game_process(dealer_per_round, dealing_cards, trump_card)           
+                    card_taker = main_process.card_anchor(card_list_for_define_card_owner, cards_on_table, trump_card, first_player_joker_answer)
+                    dealer_per_round = dealer_per_round[card_taker:] + dealer_per_round[:card_taker]
+                    cards_taken[dealer_per_round[0]] += 1
+                    round_scores = main_process.count_round_scores(players_words, cards_taken)
+                    quarter_scores[round_counter] = round_scores
+                    with open(r"C:\Users\user\Desktop\TBCacademy-Project\Final project\quarter_points.json", 'w') as json_file:
+                        json.dump(quarter_scores, json_file, indent=4)                                
+                    print(" " * 40, f"🔴🔴🔴  {dealer_per_round[0]} took the card   🔴🔴🔴")
+                    print("= " * 70)
+                    per_hand += 1
+
+                main_process.print_table(round_scores, players_words, cards_taken)
+                print()
+                main_process.print_total_scores(quarter_scores)
+                print("= " * 70)
+                round_counter += 1
+
+            bonus_points = main_process.count_true_values(quarter_scores)
+            total_scores.update(bonus_points)
+            with open(r"C:\Users\user\Desktop\TBCacademy-Project\Final project\total_points.json", 'w') as json_file:
+                json.dump(total_scores, json_file, indent=4)
+            main_process.print_total_scores(total_scores)  
+            quarter_scores.clear()
+            print("= " * 70)
