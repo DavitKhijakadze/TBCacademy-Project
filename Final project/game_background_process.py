@@ -59,9 +59,9 @@ class Player:
         
     def last_person(self, names: list):
 
-        last_random = random.choice(names)
-        names.remove(last_random)
-        names.append(last_random)
+        random_player = random.choice(names)
+        names.remove(random_player)
+        names.append(random_player)
 
         return names
 
@@ -413,7 +413,26 @@ class Main_Process:
    
 
         return quarter_scores
+
+    def find_winner(self, points):
     
+        sum_of_points = {}
+        for hand, rounds in points.items():
+            for name, points in rounds.items():
+                if name in sum_of_points:
+                    sum_of_points[name] += points[0]
+                else:
+                    sum_of_points[name] = points[0]
+        
+        winner = None
+        max_point = 0
+        for name, points in sum_of_points.items():
+            if points > max_point:
+                winner = name
+                max_point = points
+    
+        return winner
+
 class Print:
 
     def __init__(self) -> None:
@@ -430,18 +449,18 @@ class Print:
 
         print(tabulate(table_data, headers=headers, tablefmt="grid", numalign="right", stralign=alignments))
 
-    def print_total_scores(self, total_scores):
+    def print_total_scores(self, total_scores, player_names):
 
-        headers = ['Round'] + list(total_scores[1].keys())
+        headers = ['Round'] + player_names
         table = []
-        total_points = {player: 0 for player in headers[1:]}
-        
+        total_points = {player: 0 for player in player_names}  # Initialize with all player names
+
         for round_num, scores in total_scores.items():
-            row = [round_num] + [scores[player][0] for player in headers[1:]]
+            row = [round_num] + [scores.get(player, [0, False])[0] for player in player_names]
             table.append(row)
 
-        for player in headers[1:]:
-            total_points[player] = sum(total_scores[i][player][0] for i in range(1, len(total_scores) + 1))
+        for player in player_names:
+            total_points[player] = sum(total_scores[round_num].get(player, [0, False])[0] for round_num in total_scores)
 
         print(tabulate(table, headers=headers, tablefmt='grid'))
         print("\nTotal Points After All Rounds:")
@@ -557,7 +576,7 @@ def start_game():
 
                 main_process.print_table(round_scores, players_words, cards_taken)
                 print()
-                main_process.print_total_scores(quarter_scores)
+                main_process.print_total_scores(quarter_scores, dealer)
                 print("= " * 70)
                 round_counter += 1
 
@@ -565,6 +584,10 @@ def start_game():
             total_scores.update(bonus_points)
             with open(r"C:\Users\user\Desktop\TBCacademy-Project\Final project\total_points.json", 'w') as json_file:
                 json.dump(total_scores, json_file, indent=4)
-            main_process.print_total_scores(total_scores)  
+            main_process.print_total_scores(total_scores, dealer)  
             quarter_scores.clear()
             print("= " * 70)
+        
+        winner = main_process.find_winner(total_scores)
+        print(" " * 30, f"🏆🏆🏆  The winner is {winner}  🏆🏆🏆")
+
