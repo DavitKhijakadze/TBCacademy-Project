@@ -556,7 +556,9 @@ def start_game():
                 players_words = {}
                 cards_taken = {name: 0 for name in player_names}
                 trump_card = main_process.trump_statement(name, round_counter, dealing_cards)
-                word = main_process.ask_player_words(dealer, dealing_cards, trump_card)
+                player_index = dealer.index(name)
+                list_for_asking_words = dealer[player_index:] + dealer[:player_index]
+                word = main_process.ask_player_words(list_for_asking_words, dealing_cards, trump_card)
                 players_words = word
 
                 per_hand = 0
